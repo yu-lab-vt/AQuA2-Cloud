@@ -1,0 +1,242 @@
+#viewPortDSTableDiv {
+    position: relative;
+    border: 1px solid black;
+    height: 27px;
+    width: 1158px;
+    left: 7px;
+    }
+    
+    #viewPortDSTable {
+    position: relative;
+    height: 20px;
+    top: -20px;
+    left: 5px;
+    }
+    
+    #movieBoxSFPatch01 {
+    position: absolute;
+    left: 314px;
+    top: 812px;
+    height: 862px;
+    width: calc(100% - 628px);
+    border: 1px solid black;
+    background-color: #f0f0f0;
+    text-align: center;
+    }
+
+    #DetectPipeRunButton
+    {
+        position: relative;
+        Top: 1px;
+        Left: 1px;
+    }
+
+    #DetectPipeLoadButton
+    {
+        position: relative;
+        Top: 1px;
+    }
+
+    #DetectPipeRunAllStepsButton
+    {
+        position: relative;
+        Top: 2px;
+    }
+
+    #DetectPipeNextButton
+    {
+        position: relative;
+        Top: 2px;
+    }
+    
+    #movieBoxSliderDivPatch {
+    position: absolute;
+    left: 0px;
+    top: 30px;
+    height: 28px;
+    width: calc(100% - 318px);
+    border: 0px solid black;
+    background-color: #f0f0f0;
+    text-align: center;
+    }
+    
+    
+    #displaySliderDiv {
+      width: calc(100% - 50px);
+    }
+    
+    #displaySlider {
+      -webkit-appearance: slider-horizontal;
+      width: 100%;
+      height: 21px;
+      background: #d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      -webkit-transition: .2s;
+      transition: opacity .2s;
+    }
+    
+    #graphDisplayFrame
+    {
+    position: absolute;
+    left: 314px;
+    top: 5px;
+    height: 300px;
+    width: calc(100% - 628px);
+    border: 1px solid black;
+    background-color: #f0f0f0;
+    }
+    
+    #graphDisplay
+    {
+        left: calc(15%);
+        width: calc(100%);
+    }
+    
+    #rightViewportModeSelect
+    {
+    position: absolute;
+    left: calc(100% - 1375px);
+    top: 23px;
+    height: 0px;
+    width: 0px;;
+    border: 0x solid black;
+    background-color: #f0f0f0;
+    }
+    
+    #detailstable-box
+    {
+    position: absolute;
+    left: 7px;
+    top: 522px;
+    width: calc(100% - 14px);
+    border: 1x solid black;
+    background-color: #f0f0f0;
+    }
+    
+    #NewProjTabButtonLoadPreset
+    {
+    position: absolute;
+    top: 22px;
+    left: 203px;
+    }
+    
+    #NewProjTabButtonCreate
+    {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    }
+    
+    #LoadProjTabButtonCreate
+    {
+    position: absolute;
+    top: 70px;
+    left: -8px;
+    }
+    
+    #favouritetable-table
+    {
+        table-layout:auto;
+        width:100%;
+    }
+    
+    #favouritetable-scroll
+    {
+        overflow:scroll;
+        height:329px;
+    }
+    
+    #proofReadingTable-table
+    {
+        table-layout:auto;
+        width:100%;
+    }
+    
+    #proofReadingTable-scroll
+    {
+        overflow:scroll;
+        height:258px;
+    }
+    
+    #DRLCellRemove
+    {
+        position: relative;
+        top: 1px;
+    }
+    
+    #DRLCellName
+    {
+        position: relative;
+        top: 2px;
+    }
+    
+    #DRLCellSave
+    {
+        position: relative;
+        top: 3px;
+    }
+    
+    #DRLCellLoad
+    {
+        position: relative;
+        top: 4px;
+    }
+    
+    #DRLLdMarkRemove
+    {
+        position: relative;
+        top: 1px;
+    }
+    
+    #DRLLdMarkName
+    {
+        position: relative;
+        top: 2px;
+    }
+    
+    #DRLLdMarkSave
+    {
+        position: relative;
+        top: 3px;
+    }
+    
+    #DRLLdMarkLoad
+    {
+        position: relative;
+        top: 4px;
+    }
+    
+    #UIR_updateFeaturesButton
+    {
+        position: relative;
+        top: 1px;
+    }
+
+    #textSecondsPerFrame
+    {
+        position: relative;
+        Right: 6px;
+    }
+    
+    #UIR_ExtractRIOButton
+    {
+        position: relative;
+        top: 2px;
+    }
+    
+    .overlay {
+        background: #e9e9e9;
+        display: none;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        opacity: 0.5;
+    }
+    
+    #MoviePanelFrameSlider
+    {
+        width: 100%;
+    }

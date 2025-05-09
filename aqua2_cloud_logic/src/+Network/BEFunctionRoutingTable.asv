@@ -1,0 +1,138 @@
+%Mark Bright (bmark21@vt.edu)
+function [outputArg] = BEFunctionRoutingTable(obj,conn,message)
+
+    global f
+    global projectState;
+    global busy;
+    global GLOBAL_BusyTask;
+    global WSServer;
+    global count;
+    global referenceFilePath;
+    global loadingProject;
+    loadingProject = 0; %Default is zero. Set to 1 when executing loading project command.
+
+        count = 0; %Reset timeout watchdog upon recieving a command from the users
+        fh = guidata(f);
+
+        %Entry function for directing recieved payloads from client. This
+        %function will call the appropriate subroutines; dependant on the
+        %nature of the payload. This is the BE function routing table.
+        deconstructedData = Network.fromStreamPayload(obj,conn,message);
+        deconstructedData
+        switch deconstructedData{1}
+            case "trmAWBSI"
+                responseCellArray = {["TermAckn"] [10000000] [""]}; %Send an acknowledge reply
+                conn.send(Network.toStreamPayload("TermAckn",responseCellArray));
+                Supervisor.instanceTerminate(obj,conn,message);
+            case "projStat"
+                %Reference projectState global variable defined in AQuA_WBS_Main
+                responseCellArray = {["projStat"] [10000000] [projectState]};
+                conn.send(Network.toStreamPayload("projStat",responseCellArray));
+                try, WSServer.closeAll, catch, end
+            case "InitAQuA"
+                ui.proj.newProj(obj,conn,message); %Loads the new project interface. ui.proj.newProj has been WBS modified to send a payload
+            %The following case is a FE UI Refresh request. Feedback all
+            %current UI parameters.
+            case "FEUIRfsh"
+                %FEUIRfsh() sends over transport back to front end interface the values of UIcontrol elements projectstate value.
+                %What UI values are returned depends on the project state
+                Supervisor.FEUISync(obj,conn,message); %Conn is properly close and dehandled within this function
+            case "BEUISync"
+                Supervisor.BEUISync(obj,conn,message);
+            case "echoMssg"
+                conn.send(message);
+            case "cmdNewPj"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x02 Loading new project', 2); %Create a BusyTask object for monitoring execution of New Project 
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.proj.prep();
+                GLOBAL_BusyTask.FinishTask;
+            case "cmdDPRnB"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x05 Executing', 2); %Create a BusyTask object for monitoring execution. Update expected stage count in ui.detect.flow
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.detect.flow('run');
+                GLOBAL_BusyTask.FinishTask;
+            case "RnAlStps"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x06 Executing', 2); %Create a BusyTask object for monitoring execution of New Project 
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.detect.flow2();
+               GLOBAL_BusyTask.FinishTask;
+            case "cmdDPNxB"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x07 Executing', 2); %Create a BusyTask object for monitoring execution of New Project 
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.detect.flow('next');
+                GLOBAL_BusyTask.FinishTask;
+            case "cmdDPBkB"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x08 Executing', 2); %Create a BusyTask object for monitoring execution of New Project 
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.detect.flow('back');
+                GLOBAL_BusyTask.FinishTask;
+            case "ExportPr"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x09 Executing', 2); %Create a BusyTask object for monitoring execution of New Project 
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                deconstructedData{5}
+                deconstructedData{8}
+                ui.proj.getOutputFolder(deconstructedData{5});
+                GLOBAL_BusyTask.FinishTask;
+            case "loadPrst"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x00 Executing', 2); %Create a BusyTask object for monitoring execution of New Project
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, end
+                referenceFilePath = deconstructedData{5};
+                ui.proj.updtPreset();
+                GLOBAL_BusyTask.FinishTask;
+            case "loadExpr"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x00 Executing', 2); %Create a BusyTask object for monitoring execution of New Project
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, end
+                referenceFilePath = deconstructedData{5};
+                loadingProject = 1;
+                ui.proj.loadExp();
+                loadingProject = 0;
+                GLOBAL_BusyTask.FinishTask;
+            case "loadOpts"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x00 Executing', 2); %Create a BusyTask object for monitoring execution of New Project
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, end
+                referenceFilePath = deconstructedData{5};
+                ui.detect.loadOpt();
+                GLOBAL_BusyTask.FinishTask;
+            case "saveOpts"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x00 Executing', 2); %Create a BusyTask object for monitoring execution of New Project
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, end
+                referenceFilePath = deconstructedData{5};
+                ui.detect.saveOpt();
+                GLOBAL_BusyTask.FinishTask;
+            case "cmdLUpOv"
+                GLOBAL_BusyTask = Supervisor.BusyTask(true, 0, '0x05 Executing', 2); %Create a BusyTask object for monitoring execution. Update expected stage count in ui.detect.flow
+                responseCellArray = {["BusyMesg"] [10000000] [""]}; %Send a busy reply. The FE will then SQL query the instance registry for information
+                conn.send(Network.toStreamPayload("BusyMesg",responseCellArray));
+                try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+                ui.over.chgOv(2);
+                GLOBAL_BusyTask.FinishTask;
+            case "PrstSync"
+                Supervisor.PrstSync(obj,conn,message);
+            otherwise
+                responseCellArray = {["errorMsg"] [10000000] ["Error: AWBSI - Function routing table - The specified transport function was not found"]};
+                conn.send(Network.toStreamPayload("errorMsg",responseCellArray));
+                conn.close(); %Close connection object
+                conn.delete(); %Delete invalid handle
+        end
+end
+

@@ -1,0 +1,35 @@
+classdef BusyTask < handle
+    properties (Access = public, SetObservable)
+        Stage {mustBeInteger,mustBeNonNan} = 0 %Current progressional stage of the current busy task
+        LatestStatus {mustBeText,mustBeNonzeroLengthText} = 'Busy' %Latest status message of the busy task
+        ExpectedStageCount {mustBeInteger,mustBeNonzero,mustBeNonNan} %The expected number of stages of the busy task
+    end
+    properties (SetAccess = immutable)
+        Busy {mustBeNumericOrLogical,mustBeNonempty} = true %Boolean on whether the busy task is still active
+    end
+    methods
+        function BusyTaskObject = BusyTask(BusyInit,StageInit,LatestStatusInit, ExpectedStageCountInit)
+            %Constructor
+            BusyTaskObject.Busy = BusyInit;
+            BusyTaskObject.Stage = StageInit;
+            BusyTaskObject.LatestStatus = LatestStatusInit;
+            BusyTaskObject.ExpectedStageCount = ExpectedStageCountInit;
+            addlistener(BusyTaskObject,'Stage','PostSet',@Supervisor.BusyTask.PropertyChange);
+            %Update the instance registry with latest busy status
+            %information
+            Supervisor.BusyTaskSQL(BusyInit, 0, LatestStatusInit,);
+        end
+        function BusyTaskObject = ProgressTask(BusyTaskObject,LatestStatus)
+            [BusyTaskObject.LatestStatus] = LatestStatus;
+            [BusyTaskObject.Stage] = [BusyTaskObject.Stage] + 1;
+            Supervisor.BusyTaskSQL(true, ((BusyTaskObject.Stage/BusyTaskObject.ExpectedStageCount)*100), BusyTaskObject.LatestStatus, 'None');
+        end
+        function BusyTaskObject = FinishTask(BusyTaskObject)
+            Supervisor.BusyTaskSQL(false, 0, 'Idle');
+            delete(BusyTaskObject);
+        end
+        function BusyTaskObject = setExpectedStageCount(BusyTaskObject, argExpectedStageCount)
+            [BusyTaskObject.ExpectedStageCount] = argExpectedStageCount;
+        end
+    end
+end

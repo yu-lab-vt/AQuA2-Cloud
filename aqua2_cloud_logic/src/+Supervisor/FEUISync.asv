@@ -1,0 +1,273 @@
+function FEUISync(obj,conn,message)
+%Retrieve fh parameters dependent on the current project state
+global f;
+global projectState;
+global im1DownSample;
+global im2aDownSample;
+global im2bDownSample;
+global graphCurveDownSample;
+global currentFrame;
+global maximumFrame;
+
+    %try
+        fh = guidata(f);
+        assignin('base','fh',fh);
+        btSt = getappdata(f,'btSt');
+        
+        %This will never be called in project state = 0
+        if (projectState == 1) %Project state == 1 means the AQuA WBSv Backend instance is completely new and uninitialized
+            
+            PreprocesspresetString01 = "";
+            PreprocesspresetString02 = "";
+            PreprocesspresetString03 = "";
+            display("Debug");
+            fh.preset.Items
+            assignin('base','StringDump',fh.preset.Items)
+            if (~isempty(fh.preset.Items))
+                PreprocesspresetString01 = fh.preset.Items{1};
+            end
+            if (length(fh.preset.Items) > 1)
+                PreprocesspresetString02 = fh.preset.Items{2};
+            end
+            if (length(fh.preset.Items) > 2)
+                PreprocesspresetString03 = fh.preset.Items{3};
+            end
+
+            fh.tmpRes.Value
+            fh.spaRes.Value
+            fh.bdSpa.Value
+            
+            responseFhValueArray = {["projStat"] [10000000] [projectState]...
+                ["xxxxfIn1"] [10000000] [fh.fIn1.Value]...prsetOpt {5}
+                ["xxxxfIn2"] [10000000] [fh.fIn2.Value]...
+                ["xxpreset"] [10000000] [find(strcmp(fh.preset.Items,fh.preset.Value))]...
+                ["xxtmpRes"] [10000000] [fh.tmpRes.Value]... %{14}
+                ["xxspaRes"] [10000000] [fh.spaRes.Value]...
+                ["xxxbdSpa"] [10000000] [fh.bdSpa.Value]...
+                ["preset01"] [10000000] [PreprocesspresetString01]...
+                ["preset02"] [10000000] [PreprocesspresetString02]...
+                ["preset03"] [10000000] [PreprocesspresetString03]
+                };
+        
+        
+            %This part concatenates onto responseFhValueArray the preset drop down
+            %option names so that the user defined preset names can be populated
+            %into the FE select element for user defined option presets
+        %     optionsarray = [];
+        %     for n = 1 : length(cNames)
+        %         optionsarray = cat(2,optionsarray,[10000000] [char(cNames(n))]]);
+        %     end
+        %     responseFhValueArray = cat(2,responseFhValueArray,optionsarray);
+        end
+        
+        if (projectState == 2) %Project state == 1 means the AQuA WBSv Backend instance is completely new and uninitialized
+            %%Perform image conversion and serialization
+            
+            if (~fh.sbs.Value) %If single viewport mode
+                %In single viewport mode, we always bake the boundary data
+                %into the image frame. The function flips for us, dont flip
+                frameBakeTemp = patchRasterizeBake(fh.ims.im1.CData, getappdata(f,'bd'));
+
+                im1B = writeBMP(imresize(im2uint8(frameBakeTemp), im1DownSample));
+                im1B64 = encodeB64(im1B);
+                im1ImageSrc = sprintf('data:image/bmp;base64,%s',im1B64);
+                im2aImageSrc = sprintf("None");
+                im2bImageSrc = sprintf("None");
+            else %If dual viewport mode
+                %In dual viewport mode, we conditionally bake the boundary
+                %data into left-side viewport depending on the mode
+                %Only bake for raw + overlay, max projection, avg
+                %projection
+
+                btSt = getappdata(f,'btSt');
+                curType = btSt.('leftView');
+                if (curType == "Raw + overlay" || curType == "Maximum Projection" || curType == "Average Projection")
+                    %If any following modes are selected, then bake the
+                    %boundaries
+                    frameBakeTemp = patchRasterizeBake(fh.ims.im2a.CData, getappdata(f,'bd'));
+                    im2aB = writeBMP(imresize(im2uint8(frameBakeTemp), im2aDownSample));
+                else
+                    %Otherwise just feed forward the imaging data normally
+                    im2aB = writeBMP(imresize(im2uint8(flipud(fh.ims.im2a.CData)), im2aDownSample));
+                end
+                im2bB = writeBMP(imresize(im2uint8(flipud(fh.ims.im2b.CData)), im2bDownSample));
+                im2aB64 = encodeB64(im2aB);
+                im2bB64 = encodeB64(im2bB);
+                im2aImageSrc= sprintf('data:image/bmp;base64,%s',im2aB64);
+                im2bImageSrc = sprintf('data:image/bmp;base64,%s',im2bB64);
+                im1ImageSrc = sprintf("None");
+            end
+
+            newAxes = axes;
+            copyobj(fh.curve.Children, newAxes)
+            [curveImage] = frame2im(getframe(newAxes));
+
+            curveImageB = writeBMP(imresize(curveImage, graphCurveDownSample)); %We can alter the downscaling factor here
+            curveimageB64 = encodeB64(curveImageB);
+            curveImageSrc = sprintf('data:image/bmp;base64,%s',curveimageB64);
+
+            %assignin('base','im',flipud(fh.ims.im1.CData));
+            %Preset
+            PreprocesspresetString01 = "";
+            PreprocesspresetString02 = "";
+            PreprocesspresetString03 = "";
+            if (~isempty(fh.preset.Items))
+                PreprocesspresetString01 = fh.preset.Items{1};
+            end
+            if (length(fh.preset.Items) > 1)
+                PreprocesspresetString02 = fh.preset.Items{2};
+            end
+            if (length(fh.preset.Items) > 2)
+                PreprocesspresetString03 = fh.preset.Items{3};
+            end
+
+            opts = getappdata(f,'opts');
+            if (opts.enableTab > 0) tbtmp01="on", else tbtmp01="off", end
+            if (opts.enableTab > 1) tbtmp02="on", else tbtmp02="off", end
+            if (opts.enableTab > 2) tbtmp03="on", else tbtmp03="off", end
+            if (opts.enableTab > 3) tbtmp04="on", else tbtmp04="off", end
+            if (opts.enableTab > 4) tbtmp05="on", else tbtmp05="off", end
+            if (opts.enableTab > 5) tbtmp06="on", else tbtmp06="off", end
+            fprintf("DEbug 2")
+            find(strcmp(fh.registrateCorrect.Items,fh.registrateCorrect.Value))
+            responseFhValueArray = {["projStat"] [10000000] [projectState]... %{2}
+                ["xxxxfIn1"] [10000000] [fh.fIn1.Value]... {5}
+                ["xxxxfIn2"] [10000000] [fh.fIn2.Value]...
+                ["xxpreset"] [10000000] [fh.preset.Value]...
+                ["xxtmpRes"] [10000000] [fh.tmpRes.Value]...
+                ["xxspaRes"] [10000000] [fh.spaRes.Value]...
+                ["xxxbdSpa"] [10000000] [fh.bdSpa.Value]... %{20}
+                ["imagePri"] [10000000] [im1ImageSrc]... %This is primary encoded image in specific format compatible with WBS FE AQuA UI Display
+                ["regiCrct"] [10000000] [find(strcmp(fh.registrateCorrect.Items,fh.registrateCorrect.Value))]...
+                ["bleaCrct"] [10000000] [find(strcmp(fh.bleachCorrect.Items,fh.bleachCorrect.Value))]...
+                ["xsldminv"] [10000000] [fh.sldMin.Value]...
+                ["xsldmaxv"] [10000000] [fh.sldMax.Value]... %{35}
+                ["sldBri1v"] [10000000] [fh.sldBri1.Value]... %fh.sldBri1.Value is synchronized and made identical to fh.sldBriL.Value for simplicity.
+                ["sldBri2v"] [10000000] ["0"]... %{41} fh.sldBri2.Value is deprecated and unused
+                ["xsldBriL"] [10000000] [fh.sldBriL.Value]... %{44} This value isn't actually used due to it's value synchronization to fh.sldBri1.Value
+                ["xsldBriR"] [10000000] [fh.sldBriR.Value]...
+                ["sldLimOv"] [10000000] ["0"]... %Was fh.sldMinOv.Value
+                ["sldMaxOv"] [10000000] ["0"]... %Was fh.sldMaxOv.Value]
+                ["sldBriOv"] [10000000] [fh.sldBriOv.Value]... {56} Colorful overlay brightness
+                ["sldMovMx"] [10000000] [fh.sldMov.Limits(2)]... %Was fh.sldMov.Max
+                ["sldMovVa"] [10000000] [fh.sldMov.Value]...
+                ["tabsVStt"] [10000000] [opts.enableTab]... {65}
+                ["tabsCATx"] [10000000] [find(fh.deOutTab.SelectedTab==fh.deOutTab.Children)]... %Was fh.deOutTab.Selection
+                ["tabsNxBE"] [10000000] [fh.deOutNext.Enable]...
+                ["tabsNxBV"] [10000000] [fh.deOutNext.Visible]... ${74}
+                ["tabsBkBV"] [10000000] [fh.deOutBack.Visible]...
+                ["tabsRnBS"] [10000000] [fh.deOutRun.Text]... %Was fh.deOutRun.String
+                ["tabsNxBS"] [10000000] [fh.deOutNext.Text]... %Was fh.deOutNext.String
+                ["tabsT1St"] [10000000] [tbtmp01]... %Was fh.deOutTab.TabEnables{1} %{86}
+                ["tabsT2St"] [10000000] [tbtmp02]... %Was fh.deOutTab.TabEnables{2}
+                ["tabsT3St"] [10000000] [tbtmp03]... %Was fh.deOutTab.TabEnables{3}
+                ["tabsT4St"] [10000000] [tbtmp04]... %Was fh.deOutTab.TabEnables{4}
+                ["tabsT5St"] [10000000] [tbtmp05]... %Was fh.deOutTab.TabEnables{5}
+                ["tabsT6St"] [10000000] [tbtmp06]... %Was fh.deOutTab.TabEnables{6} %{101}
+                ["smoXYxxx"] [10000000] [fh.smoXY.Value]... %{104}
+                ["noiseEst"] [10000000] ["0"]... %was fh.noiseEstimation.Value
+                ["thrArScl"] [10000000] [fh.thrArScl.Value]...
+                ["MinDurxx"] [10000000] [fh.minDur.Value]...
+                ["minSizex"] [10000000] [fh.minSize.Value]... ${116}
+                ["maxSizex"] [10000000] [fh.maxSize.Value]...
+                ["ciculThr"] [10000000] [fh.circularityThr.Value]...  %{122}
+                ["needTemp"] [10000000] [fh.needTemp.Value]... %{125}
+                ["sigThrxx"] [10000000] [fh.sigThr.Value]...
+                ["maxDelay"] [10000000] [fh.maxDelay.Value]...
+                ["neeRefin"] [10000000] [fh.needRefine.Value]...
+                ["neeGrowx"] [10000000] [fh.needGrow.Value]... %{137}
+                ["neeSpaxx"] [10000000] [fh.needSpa.Value]...
+                ["cRisexxx"] [10000000] [fh.sourceSzRatio.Value]... %{143}
+                ["cDelayxx"] [10000000] [fh.sourceSensitivity.Value]... %{146}
+                ["gtwSmoxx"] [10000000] ["0"]... %Was fh.gtwSmo.Text %{149}
+                ["detctGlo"] [10000000] [fh.detectGlo.Value]...
+                ["ignorTau"] [10000000] [fh.ignoreTau.Value]...
+                ["regiCrtE"] [10000000] [convertCharsToStrings(fh.registrateCorrect.Enable)]...
+                ["bleaCrtE"] [10000000] [convertCharsToStrings(fh.bleachCorrect.Enable)]...
+                ["xxexpEvt"] [10000000] [fh.expEvt.Value]... %{164}
+                ["xxxexpFt"] [10000000] [fh.expFt.Value]...
+                ["xxexpMov"] [10000000] [fh.expMov.Value]...
+                ["xexpEvt2"] [10000000] ["0"]... %Was fh.expEvt2.Value
+                ["exportVi"] [10000000] [fh.pExport.Visible]... %{176}
+                ["preset01"] [10000000] [PreprocesspresetString01]... %{179}
+                ["preset02"] [10000000] [PreprocesspresetString02]... %{182}
+                ["preset03"] [10000000] [PreprocesspresetString03]...
+                ["xxmedSmo"] [10000000] [fh.medSmo.Value]... %{188}
+                ["sldThrIV"] [10000000] [fh.sldActThr.Value]...
+                ["sldThrIM"] [10000000] [fh.sldActThr.Limits(2)]...
+                ["spaMeDst"] [10000000] [fh.spaMergeDist.Value]...
+                ["gloDurat"] [10000000] [fh.gloDur.Value]... %{200}
+                ["runBtEna"] [10000000] [fh.deOutRun.Enable]... 
+                ["runBtVis"] [10000000] [fh.deOutRun.Visible]... 
+                ["backBtEn"] [10000000] [fh.deOutBack.Enable]... %{209}
+                ["sbsModeE"] [10000000] [string(fh.sbs.Value)]... %{212}
+                ["ovrlyDat"] [10000000] [find(strcmp(fh.overlayDat.Items,fh.overlayDat.Value))]...
+                ["ovrlyFea"] [10000000] [find(strcmp(fh.overlayFeature.Items,fh.overlayFeature.Value))]...
+                ["ovrlyCol"] [10000000] [find(strcmp(fh.overlayColor.Items,fh.overlayColor.Value))]...
+                ["updtOvly"] [10000000] [fh.updtFeature.Enable]... %{224}
+                ["updtOvl2"] [10000000] [fh.updtFeature1.Enable]... %{227}
+                ["xnEvtVal"] [10000000] [fh.nEvt.Text]...
+                ["favCH1ID"] [10000000] [fh.toolsAddEvt1.Value]...
+                ["fabCH2ID"] [10000000] [fh.toolsAddEvt2.Value]... %{236}
+                ["evtTable"] [10000000] [jsonencode(fh.evtTable.Data)]...
+                ["movLType"] [10000000] [find(strcmp(fh.movLType.Items,fh.movLType.Value))]... %{242}
+                ["movRType"] [10000000] [find(strcmp(fh.movRType.Items,fh.movRType.Value))]...
+                ["fltTable"] [10000000] [jsonencode(fh.filterTable.Data)]... %{248}
+                ["xxxxim2a"] [10000000] [im2aImageSrc]... %{251}
+                ["imgCurve"] [10000000] [curveImageSrc]... %{254}
+                ["DualChMo"] [10000000] [fh.sbs.Enable]...
+                ['GaussBEn'] [10000000] [fh.GaussFilter.Enable]... %{260}
+                ["xxxxim2b"] [10000000] [im2bImageSrc]...
+                ["ovlyFeaE"] [10000000] [fh.overlayFeature.Enable]...
+                ["DSScale1"] [10000000] [im1DownSample]...
+                ["DSScale2"] [10000000] [im2aDownSample]... %{272}
+                ["DSScale3"] [10000000] [im2bDownSample]...
+                ["DSScale4"] [10000000] [graphCurveDownSample]...
+                ["pExportV"] [10000000] [fh.pExport.Visible]... %{281} THIS IS DUPLICATED
+                ["seedSzRt"] [10000000] [fh.seedSzRatio.Value]... %{284}
+                ["propMtrc"] [10000000] [fh.propMetric.Value]...
+                ["NetworkF"] [10000000] [fh.networkFeatures.Value]... %{290}
+                ["pFilterE"] [10000000] [fh.pFilter.Visible]...
+                ["pEvtMngr"] [10000000] [fh.pEvtMngr.Visible]...
+                ["overLayC"] [10000000] [fh.overlayColor.Enable]... %{299}
+                ["curFrame"] [10000000] [currentFrame]... ${302}
+                ["maxFrame"] [10000000] [maximumFrame] %{305}
+                };
+
+                assignin('base','payload',responseFhValueArray);
+                
+        end
+        
+        
+        % argumentArray = {
+        %  ["smoXY"] [10000000] [fh.smoXY.String]...
+        %  ["noiseEstimation"] [10000000] [fh.noiseEstimation.Value]...
+        %  ["thrArScl"] [10000000] [fh.thrArScl.String]...
+        %  ["minDur"] [10000000] [fh.minDur.String]...
+        %  ["minSize"] [10000000] [fh.minSize.String]...
+        %  ["maxSize"] [10000000] [fh.maxSize.String]...
+        %  ["circularityThr"] [10000000] [fh.circularityThr.String]...
+        %  ["needTemp"] [10000000] [fh.needTemp.Value]...
+        %  ["sigThr"] [10000000] [fh.sigThr.String]...
+        %  ["maxDelay"] [10000000] [fh.maxDelay.String]...
+        %  ["needRefine"] [10000000] [fh.needRefine.Value]...
+        %  ["needGrow"] [10000000] [fh.needGrow.Value]...
+        %  ["needSpa"] [10000000] [fh.needSpa.Value]...
+        %  ["cRise"] [10000000] [fh.cRise.String]...
+        %  ["cDelay"] [10000000] [fh.cDelay.String]...
+        %  ["gtwSmo"] [10000000] [fh.gtwSmo.String]...
+        %  ["detectGlo"] [10000000] [fh.detectGlo.Value]...
+        %  ["ignoreTau"] [10000000] [fh.ignoreTau.Value]}
+        
+        %  ["infile01name"] [10000000] [fh.fIn1.String(2)] 
+        %  ["infile02dir"] [10000000] [fh.fIn2.String(1)] 
+        %  ["infile02name"] [10000000] [fh.fIn2.String(2)]};
+        
+        conn.send(Network.toStreamPayload("FEUIRfsh",responseFhValueArray));
+        try, WSServer.closeAll, catch, fprintf("WSServer.closeAll trip\n"), end
+    %catch error
+    %    Network.instanceSQL(false,0,'Error',convertStringsToChars(join(['Nonfatal error: AQuA WBSv Logical Module | FEUISync | ',error.message],"")));
+    %end
+
+end
+
