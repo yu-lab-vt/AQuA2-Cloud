@@ -12,9 +12,9 @@ If you need to use any of the above features, you'll want to run AQuA2 locally o
 ## AQuA2-Cloud Setup
 **If you are simply updating your AQuA2-Cloud to the latest version, skip to step 4.**
 
-This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine and a VNC client (RealVNC Viewer is a good choice).
+This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine installed on your hosting machine/server and a VNC client installed on any machine that can connect to it (RealVNC Viewer is a good choice).
 
-1. Install Docker Engine:
+1. Install Docker Engine on host/server:
 
       **Windows:** Download and install Docker Desktop ([www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/))
 
@@ -27,9 +27,9 @@ This setup is to be conducted on the machine (the server) for which you'd like t
 
       **or...** Simply install Docker Engine using your distro’s package manager.
 
-2. Install a VNC client. RealVNC Viewer is one example.
+2. Install a VNC client on any machine with network access to the server. RealVNC Viewer is one example.
 
-3. Download this Github project and place the project folder somewhere on the machine for which you'd like to execute and run AQuA2-Cloud.
+3. Download this Github project and place the project folder somewhere on the host/server.
 
       **Windows**: Use the web-browser to download the project and file explorer to place the folder wherever you like. Or, use git to do so as shown below...
 
