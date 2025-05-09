@@ -1231,7 +1231,7 @@ if [ ! -f "$MATLAB_EXECUTOR_SETUP_FLAG" ]; then
     echo "   - Statistics and Machine Learning Toolbox"
     echo "-- AQuA2_Cloud will not work without these toolboxes --"
     echo "5. Create symbolic links is not needed. Leave it unchecked."
-    echo "6. Allow the installer to proceed to install MATLAB. When you've have completed the installation, exit the installer then allow the container to continue."
+    echo "6. Allow the installer to proceed to install MATLAB. When you have completed the installation, exit the installer then allow the container to continue."
     echo "The container will now idle until you press any key to continue."
     echo "==========================="
     read -r -n 1 -s

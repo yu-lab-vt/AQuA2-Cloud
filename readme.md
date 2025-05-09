@@ -1,4 +1,4 @@
-![AQuA2-Cloud Logo](aqua2_cloud_website\assets\images\logoA.png)
+![AQuA2-Cloud Logo](aqua2_cloud_website/assets/images/logoA.png)
 
 AQuA2-Cloud is a online version of AQuA2 that runs in a docker container with network connectivity and capability for remote usage of AQuA2 and its core features. It uses the [MATLAB version of AQuA2](https://github.com/yu-lab-vt/AQuA2) as a logical
 back-end with custom-wrapper enabled forwarding of the GUI state. Multiple simulatenous users are supported.
@@ -44,7 +44,7 @@ https://www.mathworks.com/downloads and login via your mathworks account that co
 
 5. Set a root password for your container.
 
-      The password is set by editing the *containerSetupSettings.txt* file prior to building the image. Change *defaultpass* to a root password that you will use. You can also customize your server here, including changing ports, the information used in a generated SSL certificate (you can also add your own certificate to the docker volume later), and setting the contact information that is displayed in the website.
+      The password is set by editing the *containerSetupSettings.txt* file prior to building the image. Change *changeme* to a root password that you will use. You can also customize your server here, including changing ports, the information used in a generated SSL certificate (you can also add your own certificate to the docker volume later), and setting the contact information that is displayed in the website. Below is an instructional guide and explanation for all of the parameters.
 
       ```
       AUTOMATIC_SETUP=true (Don't change)
@@ -75,6 +75,8 @@ https://www.mathworks.com/downloads and login via your mathworks account that co
       ```
 
 6. **Make sure you did steps 4 and 5 first.** Create the AQuA2-Cloud image.
+
+      First, navigate to the project folder in an administrative/root terminal if you haven't already done so. Then, run:
 
       ```python
       docker build -t aqua2-cloud .
