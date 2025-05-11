@@ -703,6 +703,7 @@ pasv_enable=YES
 pasv_min_port=$VSFTPD_SERVER_PSV_MIN_PORT
 pasv_max_port=$VSFTPD_SERVER_PSV_MAX_PORT
 pasv_address=$PASV_ADDRESS
+pasv_addr_resolve=YES
 port_enable=YES
 allow_writeable_chroot=YES
 local_umask=0007
@@ -1155,8 +1156,12 @@ sleep 2
 echo "Starting fluxbox..."
 fluxbox > /dev/null 2>&1 < /dev/null &
 sleep 2
+
+mkdir -p ~/.vnc
+x11vnc -storepasswd "$ROOT_PASS" ~/.vnc/passwd
+
 echo "Starting x11vnc..."
-x11vnc -display :99 -forever -nopw -listen 0.0.0.0 > /dev/null 2>&1 < /dev/null &
+x11vnc -display :99 -forever -rfbauth ~/.vnc/passwd -listen 0.0.0.0 > /dev/null 2>&1 < /dev/null &
 sleep 2
 
 # Create a flag file to indicate if the matlab executor system has been set up before

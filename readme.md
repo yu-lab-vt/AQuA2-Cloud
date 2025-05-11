@@ -12,7 +12,13 @@ If you need to use any of the above features, you'll want to run AQuA2 locally o
 ## AQuA2-Cloud Setup
 **If you are simply updating your AQuA2-Cloud to the latest version, skip to step 4.**
 
-This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine installed on your hosting machine/server and a VNC client installed on any machine that can connect to it (RealVNC Viewer is a good choice).
+This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine.
+
+Setup requires usage of a VNC client, for which there are two options for manner of usage...
+
+**Option A:** Install a VNC Client on the server. This is valid if your server has remote desktop and a desktop environment for users.
+
+**Option B:** Install a VNC Client on a LAN workstation, and allow connections from that workstation's IP address to the server, by specifying the workstation's IP address in the command line for the container's first time startup. Since you only need to connect via VNC client during the service's setup, workstation IP changes are irrelevant after the service is fully configured.
 
 1. Install Docker Engine on host/server:
 
@@ -27,7 +33,7 @@ This setup is to be conducted on the machine (the server) for which you'd like t
 
       **or...** Simply install Docker Engine using your distro’s package manager.
 
-2. Install a VNC client on any machine with network access to the server. RealVNC Viewer is one example.
+2. Depending on your choice for how to go about the VNC client usage, either install your preferred VNC client on the server or on a LAN workstation of your choice.
 
 3. Download this Github project and place the project folder somewhere on the host/server.
 
@@ -83,16 +89,15 @@ https://www.mathworks.com/downloads and login via your mathworks account that co
       ```
 
 
-7. Modify the following command as needed to properly configure your container. Ensure ports defined are correct (example: if you changed SSH port from 32 to 42 in step 5, change 32:32 to 42:42 in the command below). Running this command will use the AQuA2-Cloud image created in step 6 to automatically create a container, create a docker volume (if it doesn't already exist) for storing user data, and to deploy the service. The container by default uses port 32 for local host-to-container SSH connections. You can always delete the container (**don't delete the docker volume**), download the latest github project folder, rebuild the image, and redeploy to update AQuA2-Cloud to to the latest version without losing any user data (files or website accounts).
+7. Modify the following command as needed to properly configure your container. Ensure ports defined are correct (example: if you changed SSH port from 32 to 42 in step 5, change 32:32 to 42:42 in the command below). If you elected for option B for how to go about using the VNC client, change the IP address for the VNC port mapping to the IP address of your LAN workstation (i.e. change 127.0.0.1:5900:5900 to xxx.xxx.xxx.xxx:5900:5900 where xxx.xxx.xxx.xxx is the LAN workstation address). Running this command will use the AQuA2-Cloud image created in step 6 to automatically create a container, create a docker volume (if it doesn't already exist) for storing user data, and to deploy the service. The container by default uses port 32 for local host-to-container SSH connections. You can always delete the container (**don't delete the docker volume**), download the latest github project folder, rebuild the image, and redeploy to update AQuA2-Cloud to to the latest version without losing any user data (files or website accounts).
 
       ```python
-      docker run --cpus="24" --memory="64G" -it --restart=unless-stopped -p 32:32 -p 80:80 -p 5900:5900 -p 443:443 -p 33:33 -p 50000-50009:50000-50009 -v aqua2-cloud-data:/opt/a2ud --tmpfs /mnt/matlab_ramdisk:rw,exec,size=8g --name aqua2-cloud-container aqua2-cloud
+      docker run --cpus="24" --memory="64G" -it --restart=unless-stopped -p 127.0.0.1:32:32 -p 80:80 -p 127.0.0.1:5900:5900 -p 443:443 -p 33:33 -p 50000-50009:50000-50009 -v aqua2-cloud-data:/opt/a2ud --tmpfs /mnt/matlab_ramdisk:rw,exec,size=8g --name aqua2-cloud-container aqua2-cloud
       ```
 
-8. Follow the instructions given by the container during first time setup. You will need to connect to the container via the VNC client to interactively login to MATLAB and select the toolboxes required by AQuA2-Cloud. You will have to login a total of 2 times. If you run the VNC client on the hosting machine the connection address will be localhost. You may have to allow access to port 5900 over LAN in order
-to connect to the container on the server. 
+8. Follow the instructions given by the container during first time setup. You will need to connect to the container via the VNC client to interactively login to MATLAB and select the toolboxes required by AQuA2-Cloud. You will have to login a total of 2 times. If you run the VNC client on the hosting machine the connection address will be 127.0.0.1:5900, otherwise, you may have to allow access to port 5900 over LAN in order to connect to the container on the server.
 
-9. Forward the appropriate ports in your firewall as needed.
+9. Setup any specific firewall rules you might need. All ports utilized by the service are shown in the command line in step 7, so whatever the port numbers are, those will be the port numbers you should inspect your server's firewall configuration for.
 
 ## MATLAB License Renewal or Change
 
@@ -133,3 +138,19 @@ sudo rm -rf /opt/a2ud/user_data/<the_user_name>
 ```
 /usr/local/bin/change_user_password.sh <root_password> <the_user_username> <their_new_password>
 ```
+## Website SSL certificate
+
+An auto-generated certificate that is self-signed is used for the website and FTPS server. It is located at /opt/a2ud/aqua2_cloud_ssl_certificate in the container.
+
+If you want to host this service in a publicly accessible manner, you'll want to have your certificate signed by a certificate authority. This will remove the exclamation mark on the padlock next to the url bar when users access the website in a web browser. After logging into your container as root over SSH, use the following commands to get a signed certificate. Replace <CLOUD_SERVER_IP_DOMAIN> with your IP or domain.
+
+```
+service apache2 stop
+certbot certonly --standalone -d <CLOUD_SERVER_IP_DOMAIN>
+cp /etc/letsencrypt/live/<CLOUD_SERVER_IP_DOMAIN>/fullchain.pem /opt/a2ud/aqua2_cloud_ssl_certificate/aqua2_cloud_certificate.crt
+cp /etc/letsencrypt/live/<CLOUD_SERVER_IP_DOMAIN>/privkey.pem /opt/a2ud/aqua2_cloud_ssl_certificate/aqua2_cloud_certificate.key
+service apache2 start
+```
+
+This certificate is good for 3 months. After which, you'll have to run this command set again.
+
