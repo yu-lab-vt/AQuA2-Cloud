@@ -7,6 +7,6 @@ if (isset($_SESSION['auth'])) {
 }
 else {
 
-    header("Location: AQuA2-Cloud");
+    header("Location: AQuA2");
     exit();
 }

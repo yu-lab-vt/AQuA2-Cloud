@@ -38,29 +38,9 @@
                     </ul>
                 </div>
                 <div class="col-sm-3 my-3">
-					<!--
-                    <div class="social-networks">
-                        <a href="https://github.com/msaad1999" class="twitter" target="_blank">
-                            <i class="fab fa-github"></i>
-                        </a>
-                        <a href="https://www.linkedin.com/in/muhammadsaadhussaini/" class="facebook" target="_blank">
-                            <i class="fab fa-linkedin"></i>
-                        </a>
-                    </div>
-                    <a class="btn btn-default" href="mailto:saad01.1999@gmail.com" target="_blank">Email Me</a>
-					-->
                 </div>
             </div>
         </div>
-		<!--
-        <div class="footer-copyright">
-            <p>
-                <a href="https://github.com/msaad1999/PHP-Login-System" target="_blank">PHP Login System</a> |  
-                <a href="https://github.com/msaad1999" target="_blank">msaad1999</a> | 
-                <a href="https://github.com/msaad1999/PHP-Login-System/blob/master/LICENSE" target="_blank">MIT License</a>
-            </p>
-        </div>
-		-->
     </footer>
 
 <?php } ?>

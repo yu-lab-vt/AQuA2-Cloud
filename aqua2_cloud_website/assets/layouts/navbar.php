@@ -44,7 +44,7 @@
                             </li>
                             
                             <li class="nav-item">
-                                <a class="nav-link" href="../AQuA2-Cloud">Login</a>
+                                <a class="nav-link" href="../AQuA2">Login</a>
                             </li>
 
                             <li class="nav-item">

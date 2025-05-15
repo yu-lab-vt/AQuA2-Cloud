@@ -38,7 +38,7 @@ if(isset($_COOKIE['rememberme']))
 session_unset();
 session_destroy();
 
-header("Location: ../AQuA2-Cloud/");
+header("Location: ../AQuA2/");
 exit();
 
 

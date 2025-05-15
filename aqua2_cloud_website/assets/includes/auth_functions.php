@@ -8,7 +8,7 @@ function check_logged_in() {
     }
     else {
 
-        header("Location: ../AQuA2-Cloud/");
+        header("Location: ../AQuA2/");
         exit();
     }
 }
@@ -29,7 +29,7 @@ function check_logged_in_butnot_verified(){
     }
     else {
 
-        header("Location: ../AQuA2-Cloud/");
+        header("Location: ../AQuA2/");
         exit();
     }
 }
@@ -42,7 +42,7 @@ function check_logged_out() {
     }
     else {
 
-        header("Location: ../AQuA2-Cloud/");
+        header("Location: ../AQuA2/");
         exit();
     }
 }
@@ -63,7 +63,7 @@ function check_verified() {
     }
     else {
 
-        header("Location: ../AQuA2-Cloud/");
+        header("Location: ../AQuA2/");
         exit();
     }
 }

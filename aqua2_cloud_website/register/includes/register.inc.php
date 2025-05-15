@@ -136,7 +136,7 @@ if (isset($_POST['signupsubmit'])) {
             mysqli_stmt_store_result($stmt);
 
             $_SESSION['STATUS']['loginstatus'] = 'Account created...';
-            header("Location: ../../AQuA2-Cloud/");
+            header("Location: ../../AQuA2/");
             exit();
         }
     }
