@@ -27,8 +27,8 @@ Setup requires usage of a VNC client, for which there are two options for manner
       **Debian-based Linux:** Install docker engine via the command line interface (CLI). This code should work on most Debian-based linux distributions (Ubuntu, Linux Mint, Zorin, Kali, etc).
 
       ```console
-      sudo apt-get update
-      sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      curl -fsSL https://get.docker.com -o get-docker.sh
+      sh get-docker.sh
       ```
 
       **or...** Simply install Docker Engine using your distro’s package manager.
