@@ -560,6 +560,7 @@ EOF
     echo "MySQL database setup complete."
     echo "IMPORTANT: MySQL root password should be the same as system root password"
     echo "IMPORTANT: vsftpd user password is '$VSFTPD_MYSQL_PASS'"
+    echo "IMPORTANT: aqua2_cloud_logic user password is ''"
     
     # Create flag file to indicate MySQL was set up
     touch "$MYSQL_SETUP_FLAG"
@@ -947,11 +948,14 @@ EOF
     mysql --user=root --password="$ROOT_PASS" << EOF
 -- Create mysql user with random randomly generated password
 DROP USER IF EXISTS 'apache'@'localhost';
+DROP USER IF EXISTS 'apache'@'127.0.0.1';
 
 CREATE USER 'apache'@'localhost' IDENTIFIED BY '$APACHE_MYSQL_PASS';
+CREATE USER 'apache'@'127.0.0.1' IDENTIFIED BY '$APACHE_MYSQL_PASS';
 
 -- Grant limited privileges to apache user (only what it needs)
 GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO 'apache'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO 'apache'@'127.0.0.1';
 
 -- Update privileges
 FLUSH PRIVILEGES;
