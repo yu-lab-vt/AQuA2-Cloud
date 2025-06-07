@@ -113,7 +113,7 @@ You can run the following commands after connecting to the container as root via
 ```
 mysql -u root -p
 Use AQuA2_Cloud_Database;
-SELECT * FROM users'
+SELECT * FROM users;
 exit
 ```
 ### Verify user
