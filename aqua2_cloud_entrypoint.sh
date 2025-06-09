@@ -1225,7 +1225,8 @@ if [ ! -f "$MATLAB_EXECUTOR_SETUP_FLAG" ]; then
     fi
 
     echo "=========================="
-    echo "User manual interaction required. MATLAB GUI installation."
+    echo "Manual part 1 of 2"
+    echo "First part of user manual interaction required. MATLAB GUI installation."
     echo "=========================="
     echo "The MATLAB GUI installer has been started and is attached to an internal display within the container."
     echo "Please use the VNC viewer to connect to the container and complete the installation via the MATLAB installer GUI."
@@ -1330,7 +1331,8 @@ if [ ! -f "$MATLAB_EXECUTOR_FIRSTTIMELOGIN_FLAG" ]; then
     read -r -n 1 -s
     while true; do
         echo "=========================="
-        echo "User manual interaction required. MATLAB first time login"
+        echo "Manual part 2 of 2"
+        echo "Second part of user manual interaction required. MATLAB first time login"
         echo "=========================="
         echo "The MATLAB has been started and is attached to an internal display within the container."
         echo "MATLAB requires a first time login to complete the installation."
