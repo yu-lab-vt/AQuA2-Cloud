@@ -17,6 +17,7 @@ COPY aqua2_cloud_logic /tmp/aqua2_cloud_logic
 COPY matlab_installer /tmp/matlab_installer
 COPY containerSetupSettings.txt /containerSetupSettings.txt
 COPY aqua2_cloud_entrypoint.sh /aqua2_cloud_entrypoint.sh
+RUN sed -i 's/\r$//' /aqua2_cloud_entrypoint.sh
 RUN chmod +x /aqua2_cloud_entrypoint.sh
 
 ENTRYPOINT ["/aqua2_cloud_entrypoint.sh"]
