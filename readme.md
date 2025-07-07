@@ -11,12 +11,18 @@ If you need to use any of the above features, you'll want to run AQuA2 locally o
 
 ![AQuA2-Cloud Architecture](system_arch.jpg)
 
+## AQuA2-Cloud Service
+
+We host a publicly available deployment of this service in our datacenter at Virginia Tech. You can access the service login page at https://yulab.vt.domains/AQuA2/
+
+After creating an account, simply email one of the contacts listed in the resultant contact page to have your account activated. Sample data is provided for testing and evaluation.
+
 ## AQuA2-Cloud Setup
 **If you are simply updating your AQuA2-Cloud to the latest version, skip to step 4.**
 
 This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine.
 
-Setup requires usage of a VNC client, for which there are two options for manner of usage...
+Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc.com/en/connect/download/viewer/](www.realvnc.com/en/connect/download/viewer/)). There are two options for manner of usage of the VNC client during setup...
 
 **Option A:** Install a VNC Client on the server. This is valid if your server has remote desktop and a desktop environment for users.
 
@@ -35,7 +41,7 @@ Setup requires usage of a VNC client, for which there are two options for manner
 
       **or...** Simply install Docker Engine using your distro’s package manager.
 
-2. Depending on your choice for how to go about the VNC client usage, either install your preferred VNC client on the server or on a LAN workstation of your choice.
+2. Depending on your choice for how to go about the VNC client usage, either install the recommended or your preferred VNC client on the server or on a LAN workstation of your choice.
 
 3. Download this Github project and place the project folder somewhere on the host/server.
 
