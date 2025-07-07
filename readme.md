@@ -11,7 +11,7 @@ If you need to use any of the above features, you'll want to run AQuA2 locally o
 
 ![AQuA2-Cloud Architecture](system_arch.jpg)
 
-## AQuA2-Cloud Service
+## Public Service
 
 We host a publicly available deployment of this service in our datacenter at Virginia Tech. You can access the service login page at https://yulab.vt.domains/AQuA2/
 
