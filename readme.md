@@ -22,9 +22,9 @@ After creating an account, simply email one of the contacts listed in the result
 
 ## Basic Usage
 
-A basic guide for getting started is available at:  https://html-preview.github.io/?url=https://github.com/yu-lab-vt/AQuA2-Cloud/guide/AQuA2_cloud_guide.html
-This guide can also be downloaded: (https://github.com/yu-lab-vt/AQuA2-Cloud/guide/AQuA2_cloud_guide.zip). 
-The guide is also provided as a navigable webpage when you login to any deployed instance of this system.
+A basic guide for getting started, which can be locally viewed in any web browser (click on the .html file after unpacking), can be downloaded here: (https://raw.githubusercontent.com/yu-lab-vt/AQuA2-Cloud/main/guide/AQuA2_cloud_guide.zip). 
+
+This same guide is also provided as a navigable webpage when you login to any deployed instance of this system.
 
 ## AQuA2-Cloud Setup
 **If you are simply updating your AQuA2-Cloud to the latest version, skip to step 4.**
