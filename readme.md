@@ -3,6 +3,8 @@
 AQuA2-Cloud is a online version of AQuA2 that runs in a docker container with network connectivity and capability for remote usage of AQuA2 and its core features. It uses the [MATLAB version of AQuA2](https://github.com/yu-lab-vt/AQuA2) as a logical
 back-end with custom-wrapper enabled forwarding of the GUI state. Multiple simulatenous users are supported.
 
+It is intended to be deployed by groups, individuals, or institutions looking to enable networked multi-user conduct of spatiotemporal biological imaging analysis on a particular hardware system through a web interface.
+
 AQuA2-Cloud supports all functionality of AQuA2 **except** for:
 - CFU Analysis
 - Viewing 3D data
@@ -16,11 +18,13 @@ If you need to use any of the above features, you'll want to run AQuA2 locally o
 
 We host a publicly available deployment of this service in our datacenter at Virginia Tech. You can access the service login page at https://yulab.vt.domains/AQuA2/
 
-After creating an account, simply email one of the contacts listed in the resultant contact page to have your account activated. Sample data is provided for testing and evaluation.
+After creating an account, simply email one of the contacts listed in the resultant contact page to have your account activated. This is to protect our computational/storage resources from misuse. Sample data is provided for testing and evaluation.
 
 ## Basic Usage
 
-A basic guide for getting started with some provided sample data is available at (https://github.com/yu-lab-vt/AQuA2-Cloud/tree/main/aqua2_cloud_website/guide/guide_offline_version.html)
+A basic guide for getting started is available at:  https://html-preview.github.io/?url=https://github.com/yu-lab-vt/AQuA2-Cloud/guide/AQuA2_cloud_guide.html
+This guide can also be downloaded: (https://github.com/yu-lab-vt/AQuA2-Cloud/guide/AQuA2_cloud_guide.zip). 
+The guide is also provided as a navigable webpage when you login to any deployed instance of this system.
 
 ## AQuA2-Cloud Setup
 **If you are simply updating your AQuA2-Cloud to the latest version, skip to step 4.**
