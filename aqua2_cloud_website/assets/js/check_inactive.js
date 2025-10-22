@@ -6,7 +6,7 @@ $(document).ready(function() {
             url: '../assets/includes/checkinactive.ajax.php',
             success: function(response) {
                 if (response == 'logout_redirect') {
-                    location.href = "../AQuA2-Cloud/";
+                    location.href = "../AQuA2/";
                 }
             }
         });
