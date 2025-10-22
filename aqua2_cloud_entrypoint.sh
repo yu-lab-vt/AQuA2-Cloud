@@ -1557,14 +1557,38 @@ else
     echo "Web server running"
 fi
 
+echo "Ensuring GUI environment is active..."
+export DISPLAY=:99
+pgrep Xvfb > /dev/null || Xvfb :99 -screen 0 1280x1024x24 &
+pgrep fluxbox > /dev/null || fluxbox &
+pgrep x11vnc > /dev/null || x11vnc -display :99 -rfbport 5900 -forever -shared -nopw -listen 0.0.0.0 &
+
 echo "== AQuA2-Cloud ready to use =="
 # Keep the container running indefinitely
 while true; do
-    # Check for restart signal
+    # Restart the GUI environment if any process died
+    export DISPLAY=:99
+    if ! pgrep Xvfb > /dev/null; then
+        echo "$(date): Xvfb not running, restarting..."
+        Xvfb :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
+    fi
+
+    if ! pgrep fluxbox > /dev/null; then
+        echo "$(date): Fluxbox not running, restarting..."
+        fluxbox > /dev/null 2>&1 &
+    fi
+
+    if ! pgrep x11vnc > /dev/null; then
+        echo "$(date): x11vnc not running, restarting..."
+        x11vnc -display :99 -rfbport 5900 -forever -shared -nopw -listen 0.0.0.0 > /dev/null 2>&1 &
+    fi
+
+    # Check for container restart flag
     if [ -f /tmp/RESTART_CONTAINER ]; then
         echo "$(date): Restart flag found. Cleaning up and exiting..."
         rm -f /tmp/RESTART_CONTAINER
-        exit 1  # Docker restart policy will handle the rest
+        exit 1
     fi
+    
     sleep 10
 done
