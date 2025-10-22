@@ -35,7 +35,7 @@ Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc
 
 **Option A:** Install a VNC Client on the server. This is valid if your server has remote desktop and a desktop environment for users.
 
-**Option B:** Install a VNC Client on a LAN workstation, and allow connections from that workstation's IP address to the server, by specifying the workstation's IP address in the command line for the container's first time startup. Since you only need to connect via VNC client during the service's setup, workstation IP changes are irrelevant after the service is fully configured.
+**Option B:** Install a VNC Client on a LAN workstation, and allow connections from that workstation's IP address to the server, by specifying the workstation's IP address in the command line for the container's first time startup. You can connect to the internal display system of the docker container later for updating MATLAB license configurations.
 
 >1. Install Docker Engine on host/server:
 >
