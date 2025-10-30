@@ -188,9 +188,9 @@ docker volume rm VOLUME_NAME [VOLUME_NAME]
 ### SSH to the container
 
 ```
-ssh -p 52 root@localhost
+ssh -p 32 root@localhost
 ```
-Replace 52 with your custom defined SSH port value if you modified it during setup.
+Replace 32 with your custom defined SSH port value if you modified it during setup.
 Enter the root password of the docker container when prompted.
 
 </td></tr> </table>
