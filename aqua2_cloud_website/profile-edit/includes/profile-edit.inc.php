@@ -112,10 +112,39 @@ if (isset($_POST['update-profile'])) {
         } 
         else {
 
-            if ($passwordUpdated){
+            if ($passwordUpdated) {
 
                 $hashedPwd = password_hash($newpassword, PASSWORD_DEFAULT);
-                mysqli_stmt_bind_param($stmt, "ssssssssss", 
+
+                // Generate vsftpd-compatible hash for FTP
+                function make_vsftpd_hash($password) {
+                    $inner = sha1($password, true);
+                    $outer = sha1($inner);
+                    return '*' . strtoupper($outer);
+                }
+                $ftpHash = make_vsftpd_hash($newpassword);
+
+                $sql = "UPDATE users 
+                    SET username=?,
+                        email=?, 
+                        first_name=?, 
+                        last_name=?, 
+                        gender=?, 
+                        headline=?, 
+                        bio=?, 
+                        profile_image=?,
+                        password=?,
+                        passwordFTP=?
+                    WHERE id=?;";
+
+                $stmt = mysqli_stmt_init($conn);
+                if (!mysqli_stmt_prepare($stmt, $sql)) {
+                    $_SESSION['ERRORS']['scripterror'] = 'SQL ERROR';
+                    header("Location: ../");
+                    exit();
+                }
+
+                mysqli_stmt_bind_param($stmt, "sssssssssss", 
                     $username,
                     $email,
                     $first_name,
@@ -125,10 +154,28 @@ if (isset($_POST['update-profile'])) {
                     $bio,
                     $FileNameNew,
                     $hashedPwd,
+                    $ftpHash,
                     $_SESSION['id']
                 );
             }
-            else{
+            else {
+                $sql = "UPDATE users 
+                    SET username=?,
+                        email=?, 
+                        first_name=?, 
+                        last_name=?, 
+                        gender=?, 
+                        headline=?, 
+                        bio=?, 
+                        profile_image=?
+                    WHERE id=?;";
+                
+                $stmt = mysqli_stmt_init($conn);
+                if (!mysqli_stmt_prepare($stmt, $sql)) {
+                    $_SESSION['ERRORS']['scripterror'] = 'SQL ERROR';
+                    header("Location: ../");
+                    exit();
+                }
 
                 mysqli_stmt_bind_param($stmt, "sssssssss", 
                     $username,

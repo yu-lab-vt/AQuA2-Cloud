@@ -1112,11 +1112,13 @@ USERNAME="$2"
 NEW_PASS="$3"
 DB="AQuA2_Cloud_Database"
 
+HASH=$(php -r "echo password_hash('$NEW_PASS', PASSWORD_DEFAULT);")
+
 # Update the application user’s password and its FTP fields
 mysql -u root -p"$ROOT_PASS" -D "$DB" <<SQL
 UPDATE users
   SET
-    password = '$NEW_PASS',
+    password = '$HASH',
     passwordFTP = CONCAT('*', UPPER(SHA1(UNHEX(SHA1('$NEW_PASS'))))),
     passwordFTPHold = CONCAT('*', UPPER(SHA1(UNHEX(SHA1('$NEW_PASS')))))
   WHERE username = '$USERNAME';
