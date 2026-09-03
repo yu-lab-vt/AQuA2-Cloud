@@ -31,7 +31,7 @@ This same guide is also provided as a navigable webpage when you login to any de
 
 This setup is to be conducted on the machine (the server) for which you'd like to run AQuA2-Cloud. Clients will only need a web-browser and FTP client later. For deploying AQuA2-Cloud, you will need Docker Engine.
 
-Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc.com/en/connect/download/viewer/](www.realvnc.com/en/connect/download/viewer/)). There are two options for manner of usage of the VNC client during setup...
+Setup requires usage of a VNC client. We recommend TigerVNC ([tigervnc.org](https://tigervnc.org/)) because it is free and available for both Windows and Linux. There are two options for manner of usage of the VNC client during setup...
 
 **Option A:** Install a VNC Client on the server. This is valid if your server has remote desktop and a desktop environment for users.
 
@@ -50,7 +50,7 @@ Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc
 >
 >      **or...** Simply install Docker Engine using your distro’s package manager.
 
->2. Depending on your choice for how to go about the VNC client usage, install a VNC client on the host/server or on a LAN workstation.
+>2. Depending on your choice for how to go about the VNC client usage, install TigerVNC on the host/server or on a LAN workstation.
 
 >3. Download this Github project and place the project folder somewhere on the host/server.
 >
@@ -73,7 +73,34 @@ Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc
 >
 >      You should set a root password for your container. **Save this password in a safe place. You will need it for performing service management functions in the future as needed.**
 >
->      The root password is set by changing *changeme* to a root password that you will use. Example: ROOT_PASS=mycustompassword
+>      **Do not place your root password in *containerSetupSettings.txt*.** That file is copied into the image. Instead, we create a local secret file that is excluded from Docker builds. Run the commands for your host operating system from the project directory, then enter a strong password when prompted:
+>
+>      **Do not use a double quote (") or a backslash (\\) in the password.** Both are escape characters in MySQL configuration files and will prevent the service from authenticating to its own database. Every other printable character, including #, spaces, and symbols, is fine.
+>
+>      **Linux:**
+>
+>      ```console
+>      mkdir -p secrets
+>      chmod 700 secrets
+>      umask 077
+>      read -rsp "AQuA2-Cloud root password: " ROOT_PASS; echo
+>      printf '%s\n' "$ROOT_PASS" > secrets/aqua2_root_password
+>      unset ROOT_PASS
+>      ```
+>
+>      **Windows:** Run these in PowerShell. Do not use Notepad or another text editor to create this file, as editors commonly add a byte order mark that the container cannot read.
+>
+>      ```console
+>      New-Item -ItemType Directory -Force -Path secrets | Out-Null
+>      $secure = Read-Host "AQuA2-Cloud root password" -AsSecureString
+>      $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+>      $plain = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+>      [IO.File]::WriteAllText("$PWD\secrets\aqua2_root_password", $plain, (New-Object Text.UTF8Encoding $false))
+>      icacls "$PWD\secrets\aqua2_root_password" /inheritance:r /grant:r "${env:USERNAME}:(R)" | Out-Null
+>      [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr); $plain = $null
+>      ```
+>
+>      Keep this file private. For an existing deployment, its value must be the current root/MySQL root password. The docker run command in step 7 mounts this file into the container.
 >      
 >      You can also customize your server here, including changing ports, the information used in a generated SSL certificate (you can also add your own certificate to the docker volume later), and setting the contact information that is displayed in the website. 
 >
@@ -86,8 +113,7 @@ Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc
 >      ```
 >      AUTOMATIC_SETUP=true (Don't change)
 >      DEV_MODE=false (Leave disabled. If enabled, creates a testing user account with username testU and password testP)
->      ROOT_PASS=changeme (Change)
->      OPENSSH_SERVER_PORT=32 (The port to use for SSH connections)
+>      ROOT_PASS_FILE="/run/secrets/aqua2_root_password" (Leave as is. This is the in-container path that the docker run command in step 7 mounts your host secret file to.)
 >      MATLAB_FILES_SKIP=false (Leave false. Skips checking if a matlab installer .zip file is present. The .zip file is copied into the container during image build, and setup will fail without it.)
 >      MYSQL_DATABASE_DIRECTORY="/mysql" (Leave as is. Determines the directory for MySQL database within the docker volume.)
 >      CLOUD_SERVER_IP_DOMAIN=127.0.0.1 (Replace with the IP or domain name that you'd like the server to respond to.)
@@ -121,14 +147,22 @@ Setup requires usage of a VNC client. We recommend RealVNC Viewer: ([www.realvnc
 
 >7. Modify the following command as needed to properly configure your container. 
 >
->     Ensure ports defined are correct (example: if you changed SSH port from 32 to 42 in step 5, change 32:32 to 42:42 in the command below). 
->
 >     You can define the CPU count and the allocated RAM for the deployed service here. Note that there is a generally a minimum RAM requirement of about 10-12 GB for stable and reliable operation. Generally, the more CPU and RAM allocated, the faster the processing.
 >
->     If you elected for option B for how to go about using the VNC client, change the IP address for the VNC port mapping to the IP address of your LAN workstation (i.e. change 127.0.0.1:5900:5900 to xxx.xxx.xxx.xxx:5900:5900 where xxx.xxx.xxx.xxx is the LAN workstation address). Running this command will use the AQuA2-Cloud image created in step 6 to automatically create a container, create a docker volume (if it doesn't already exist) for storing user data, and to deploy the service. The container by default uses port 32 for local host-to-container SSH connections. You can always delete the container (**don't delete the docker volume unless you want to delete all user data and databases as well**), download the latest github project folder, rebuild the image, and deploy a new container to update AQuA2-Cloud to to the latest version without losing any user data (files or website accounts) as it will use the existing docker volume.
+>     If you elected for option B for how to go about using the VNC client, change the IP address for the VNC port mapping to the IP address of your LAN workstation (i.e. change 127.0.0.1:5900:5900 to xxx.xxx.xxx.xxx:5900:5900 where xxx.xxx.xxx.xxx is the LAN workstation address). Running this command will use the AQuA2-Cloud image created in step 6 to automatically create a container, create a docker volume (if it doesn't already exist) for storing user data, and to deploy the service. You can always delete the container (**don't delete the docker volume unless you want to delete all user data and databases as well**), download the latest github project folder, rebuild the image, and deploy a new container to update AQuA2-Cloud to to the latest version without losing any user data (files or website accounts) as it will use the existing docker volume.
+>
+>     The **--mount** option gives the container read-only access to the root password secret file you created in step 5. Run the command from the project directory so that the path to *secrets/aqua2_root_password* resolves correctly.
+>
+>      **Linux:**
 >
 >      ```python
->      docker run --cpus="24" --memory="64G" -it --restart=unless-stopped -p 127.0.0.1:32:32 -p 80:80 -p 127.0.0.1:5900:5900 -p 443:443 -p 33:33 -p 50000-50009:50000-50009 -v aqua2-cloud-data:/opt/a2ud --tmpfs /mnt/matlab_ramdisk:rw,exec,size=8g --name aqua2-cloud-container aqua2-cloud
+>      docker run --cpus="24" --memory="64G" -it --restart=unless-stopped -p 80:80 -p 127.0.0.1:5900:5900 -p 443:443 -p 33:33 -p 50000-50009:50000-50009 -v aqua2-cloud-data:/opt/a2ud --mount type=bind,src="$(pwd)/secrets/aqua2_root_password",dst=/run/secrets/aqua2_root_password,readonly --tmpfs /mnt/matlab_ramdisk:rw,exec,size=8g --name aqua2-cloud-container aqua2-cloud
+>      ```
+>
+>      **Windows:** Run this in PowerShell.
+>
+>      ```python
+>      docker run --cpus="24" --memory="64G" -it --restart=unless-stopped -p 80:80 -p 127.0.0.1:5900:5900 -p 443:443 -p 33:33 -p 50000-50009:50000-50009 -v aqua2-cloud-data:/opt/a2ud --mount type=bind,src="${PWD}/secrets/aqua2_root_password",dst=/run/secrets/aqua2_root_password,readonly --tmpfs /mnt/matlab_ramdisk:rw,exec,size=8g --name aqua2-cloud-container aqua2-cloud
 >      ```
 
 >8. Follow the instructions given by the container during first time setup. You will need to connect to the container via the VNC client to interactively login to MATLAB and select the toolboxes required by AQuA2-Cloud. **You will have to login to MATLAB a total of 2 times.** If you run the VNC client on the hosting machine the connection address will be 127.0.0.1:5900, otherwise, you may have to allow access to port 5900 over LAN in order to connect to the container on the server.
@@ -185,13 +219,13 @@ docker rm [container_name_or_id]
 docker volume rm VOLUME_NAME [VOLUME_NAME]
 ```
 
-### SSH to the container
+### Open a shell inside the container
 
+Use docker exec to get a root shell inside the container, which is where the service management functions are run.
 ```
-ssh -p 32 root@localhost
+docker exec -it [container_name_or_id] bash
 ```
-Replace 32 with your custom defined SSH port value if you modified it during setup.
-Enter the root password of the docker container when prompted.
+Type exit to leave the shell. The container keeps running.
 
 </td></tr> </table>
 
@@ -199,25 +233,24 @@ Enter the root password of the docker container when prompted.
 <tr><td style="background-color:#D3E3C8; padding:10px; border-radius:8px;">
 
 ### Service management functions within the container
-**For all service managment commands/functions shown below, replace <root_password> with the container root password where applicable, or enter root password when asked.**
+**The commands below are run from a root shell inside the container. Open one from the host with `docker exec -it [container_name_or_id] bash`.**
+
+The user management scripts read the mounted root password secret on their own, so you do not need to pass any password to them.
 
 ### List users
 ```
-mysql -u root -p
-Use AQuA2_Cloud_Database;
-SELECT * FROM users;
-exit
+mysql --defaults-extra-file=<(printf '[client]\nuser=root\npassword="%s"\n' "$(tr -d '\r\n' < /run/secrets/aqua2_root_password)") -D AQuA2_Cloud_Database -e "SELECT id, username, email, verified_at, created_at, last_login_at FROM users;"
 ```
 
 ### Verify user
 This allows one to proceed past the "Verification required" page after initial account creation
 ```
-/usr/local/bin/verify_user.sh <root_password> <the_user_username>
+/usr/local/bin/verify_user.sh <the_user_username>
 ```
 ### Remove user
 Deletes a user's account from the internal database system, but retains their user data.
 ```
-/usr/local/bin/remove_user.sh <root_password> <the_user_username>
+/usr/local/bin/remove_user.sh <the_user_username>
 ```
 ### Delete a user's data (Be careful)
 
@@ -234,7 +267,7 @@ sudo rm -rf /opt/a2ud/user_data/<the_user_name>
 ### Change user password
 Change a user's password. Rather than an integrated password reset system using emails, it is simpler to use a temporary password then have the user change it after logging in.
 ```
-/usr/local/bin/change_user_password.sh <root_password> <the_user_username> <their_new_password>
+/usr/local/bin/change_user_password.sh <the_user_username> <their_new_password>
 ```
 
 ### View website logs
@@ -309,7 +342,7 @@ An auto-generated certificate that is self-signed is used for the website and FT
 
 If you want to host this service in a publicly accessible manner, you'll want to have your certificate signed by a certificate authority. This will remove the exclamation mark on the padlock next to the url bar when users access the website in a web browser.
 
-Use the following commands to get a signed certificate. Replace <CLOUD_SERVER_IP_DOMAIN> with your IP or domain.
+Run the following commands from a root shell inside the container, which you can open with `docker exec -it [container_name_or_id] bash`. Replace <CLOUD_SERVER_IP_DOMAIN> with your IP or domain.
 
 ```
 service apache2 stop

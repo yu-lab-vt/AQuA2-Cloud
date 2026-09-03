@@ -521,6 +521,8 @@ function fm_show_footer()
 			}
 		}
 
+		const csrfToken = <?php echo json_encode($_SESSION['token']); ?>;
+
 		function UActionSimple(UActionSimpleFunction, waitingOnServerSetFlag)
 		{
 			//console.log("UActionSimple called" + UActionSimpleFunction);
@@ -534,7 +536,8 @@ function fm_show_footer()
 				url:'UActionSimple.php',
 				data: 
 				{
-					UActionSimpleFunction: UActionSimpleFunction
+					UActionSimpleFunction: UActionSimpleFunction,
+					token: csrfToken
 				},
 				cache : false,
 				dataType: 'json',
@@ -599,7 +602,8 @@ function fm_show_footer()
 				{
 					UActionFunction: UActionFunction,
 					data: data,
-					callingFunction : callingFunction
+					callingFunction : callingFunction,
+					token: csrfToken
 				},
 				cache : false,
 				dataType: 'json',
@@ -704,7 +708,8 @@ function fm_show_footer()
 				type: 'POST',
 				url: 'UActionSimple.php',
 				data: {
-					UActionSimpleFunction: "SetInstanceBusyStatusAsSendingCommand"
+					UActionSimpleFunction: "SetInstanceBusyStatusAsSendingCommand",
+					token: csrfToken
 				},
 				cache: false,
 				dataType: 'json',

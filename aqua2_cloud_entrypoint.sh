@@ -99,11 +99,8 @@ chmod g+s /opt/a2ud/aqua2_cloud_ssl_certificate
 
 DEV_MODE=$(echo "$DEV_MODE" | tr -d '\r')
 
-if [ "$DEV_MODE" = true ]; then
-    apt-get install -y nano
-fi
-
 AUTOMATIC_SETUP=$(echo "$AUTOMATIC_SETUP" | tr -d '\r')
+ROOT_PASS_FILE=$(echo "${ROOT_PASS_FILE:-/run/secrets/aqua2_root_password}" | tr -d '\r')
 echo ""
 echo "========================"
 echo ""
@@ -129,12 +126,18 @@ if [ "$AUTOMATIC_SETUP" = false ]; then
     # Store a hashed version for future checks (in-memory container file)
     echo -n "$ROOT_PASS" | sha256sum | awk '{print $1}' > "$ROOT_HASH_FILE"
 else
-    echo "Automatic setup mode: Set root password from configuration..."
-    # Set root password directly
-    ROOT_PASS=$(echo "$ROOT_PASS" | tr -d '\r')
+    echo "Automatic setup mode: Reading root password from $ROOT_PASS_FILE..."
+
+    if [ ! -r "$ROOT_PASS_FILE" ]; then
+        echo "Root password secret is missing or unreadable: $ROOT_PASS_FILE"
+        echo "Mount a root-readable secret file at this path before starting the container."
+        exit 1
+    fi
+
+    ROOT_PASS=$(tr -d '\r\n' < "$ROOT_PASS_FILE")
 
     if [ -z "$ROOT_PASS" ]; then
-        echo "ROOT_PASS is empty. Cannot proceed with automatic root password setup."
+        echo "Root password secret is empty. Cannot proceed with automatic root password setup."
         exit 1
     fi
 
@@ -148,147 +151,44 @@ fi
 
 chmod 600 "$ROOT_HASH_FILE"
 
-echo ""
-echo "========================"
-echo ""
-echo "Container SSH Server"
-echo "========================"
-
-# Create a flag file to indicate SSH has been set up before
-# Store it in a container-local path, not in the mounted volume
-SSH_SETUP_FLAG="/var/.ssh_configured"
-
-# Better check for SSH installation and service status
-# Only proceed with setup if SSH is not properly configured
-if [ ! -f "$SSH_SETUP_FLAG" ] && (! dpkg -l | grep -q openssh-server || ! [ -f "/etc/ssh/sshd_config" ]); then
-    echo "Setting up SSH server..."
-    
-    if [ "$AUTOMATIC_SETUP" = false ]; then
-        # Prompt for SSH port
-        read -p "Enter SSH port to use [Leave blank to use default of 32]: " SSH_PORT
-        SSH_PORT=${SSH_PORT:-32}  # Default to 32 if empty
-    else
-        # Use value from settings file or fallback to default
-        SSH_PORT=${OPENSSH_SERVER_PORT:-32}
-        echo "Using SSH port from settings: $SSH_PORT"
-    fi
-
-    echo "Installing OpenSSH server..."
-    apt-get update && apt-get install -y openssh-server
-
-
-    # Ensure SSH runtime directory exists
-    mkdir -p /var/run/sshd
-
-    echo "Configuring SSH daemon..."
-    # Configure SSH to listen on container's internal interface
-    sed -i "s/^#Port .*/Port $SSH_PORT/" /etc/ssh/sshd_config
-    sed -i "s/^Port .*/Port $SSH_PORT/" /etc/ssh/sshd_config
-    
-    # Remove any existing ListenAddress lines
-    sed -i "/^ListenAddress/d" /etc/ssh/sshd_config
-    
-    # Allow root login
-    sed -i "s/^#PermitRootLogin.*/PermitRootLogin yes/" /etc/ssh/sshd_config
-    sed -i "s/^PermitRootLogin.*/PermitRootLogin yes/" /etc/ssh/sshd_config
-    if ! grep -q "^PermitRootLogin" /etc/ssh/sshd_config; then
-        echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-    fi
-
-    # Configure password authentication
-    sed -i "s/^#PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
-    sed -i "s/^PasswordAuthentication.*/PasswordAuthentication yes/" /etc/ssh/sshd_config
-    
-    echo "SSH configured to use port $SSH_PORT and accept connections via Docker port mapping."
-    touch "$SSH_SETUP_FLAG"
-else
-    echo "SSH server is already configured."
-fi
-
-# Always ensure SSH is running (whether we just set it up or it was already configured)
-if ! service ssh status &> /dev/null; then
-    echo "Starting SSH server..."
-    service ssh start
-else
-    echo "SSH server is already running."
-    service ssh restart  # Restart to ensure it picked up any config changes
-fi
-
-echo ""
-echo "SSH Connection Information"
-echo "========================="
-SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}')
-CONTAINER_IP=$(hostname -I | awk '{print $1}')
-echo "• Container SSH service is running on port: $SSH_PORT"
-echo "• Container internal IP: $CONTAINER_IP"
-echo ""
-echo "IMPORTANT: To connect from the host running docker engine:"
-echo "   1. Make sure you started Docker with port mapping: -p $SSH_PORT:$SSH_PORT"
-echo "   2. In a local SSH client, connect to localhost:$SSH_PORT or 127.0.0.1:$SSH_PORT (not $CONTAINER_IP)"
-echo "   3. If that doesn't work, try connecting to host.docker.internal:$SSH_PORT"
-echo ""
-echo "SSH Server status:"
-service ssh status
-echo ""
-echo "SSH Config:"
-grep -v "^#" /etc/ssh/sshd_config | grep -v "^$"
-echo ""
-echo "Listening ports:"
-netstat -tulpn | grep LISTEN
-echo "========================"
-
 echo "========================="
 echo ""
 echo "MySQL Database Setup"
 echo "========================="
 
-# Create a flag file to indicate MySQL has been set up before
-MYSQL_SETUP_FLAG="/var/.mysql_configured"
 MYSQL_DATABASE_DIRECTORY=$(echo "$MYSQL_DATABASE_DIRECTORY" | tr -d '\r')
 HOST_MYSQL_DATABASE_PATH="/opt/a2ud$MYSQL_DATABASE_DIRECTORY"
 MYSQL_VSFTPD_CREDS_FILE="$HOST_MYSQL_DATABASE_PATH/vsftpd_credentials"
 
-if [ ! -f "$MYSQL_SETUP_FLAG" ]; then
-    echo "Setting up MySQL server..."
-    Prexisting_DB_Data=false
-    # Install MySQL server and client
-    echo "Installing MySQL server and client..."
-    DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server mysql-client expect
+# MySQL packages and their container-local configuration must be prepared on
+# every replacement container. Database initialization itself must happen only
+# once, based on the persisted MySQL system tables in the mounted volume.
+echo "Preparing MySQL server..."
 
-    mkdir -p /home/mysql
-    chown mysql:mysql /home/mysql
-    usermod -d /home/mysql mysql
+mkdir -p /home/mysql
+chown mysql:mysql /home/mysql
+usermod -d /home/mysql mysql
+usermod -g a2cloud mysql
+usermod -G a2cloud mysql
 
-    usermod -g a2cloud mysql #Set mysql user group to a2cloud group
-    usermod -G a2cloud mysql #Set mysql user group to a2cloud group
+mkdir -p "$HOST_MYSQL_DATABASE_PATH"
+chmod 770 "$HOST_MYSQL_DATABASE_PATH"
+chown -R mysql:mysql "$HOST_MYSQL_DATABASE_PATH"
+chmod g+s "$HOST_MYSQL_DATABASE_PATH"
 
-    # Ensure MySQL data directory path exists
-    mkdir -p "$HOST_MYSQL_DATABASE_PATH"
-    chmod 770 "$HOST_MYSQL_DATABASE_PATH"
-    chown -R mysql:mysql "$HOST_MYSQL_DATABASE_PATH"
-    chmod g+s "$HOST_MYSQL_DATABASE_PATH"
+mkdir -p /var/run/mysqld
+chown -R mysql:mysql /var/run/mysqld
+chmod -R 770 /var/run/mysqld
+chmod g+s /var/run/mysqld
 
-    # Ensure MySQL socket directory exists
-    mkdir -p /var/run/mysqld
-    chown -R mysql:mysql /var/run/mysqld
-    chmod -R 770 /var/run/mysqld
-    chmod g+s /var/run/mysqld
+echo "Configuring mysqld.cnf for the persistent data directory..."
+sed -i 's|^# pid-file.*|pid-file = /var/run/mysqld/mysqld.pid|' /etc/mysql/mysql.conf.d/mysqld.cnf
+sed -i 's|^# socket.*|socket = /var/run/mysqld/mysqld.sock|' /etc/mysql/mysql.conf.d/mysqld.cnf
+sed -i "s|^# datadir.*|datadir = $HOST_MYSQL_DATABASE_PATH|" /etc/mysql/mysql.conf.d/mysqld.cnf
 
-    echo "Configuring mysqld.cnf for custom paths..."
-    sed -i 's|^# pid-file.*|pid-file = /var/run/mysqld/mysqld.pid|' /etc/mysql/mysql.conf.d/mysqld.cnf
-    sed -i 's|^# socket.*|socket = /var/run/mysqld/mysqld.sock|' /etc/mysql/mysql.conf.d/mysqld.cnf
-    sed -i 's|^# datadir.*|datadir = /opt/a2ud/mysql|' /etc/mysql/mysql.conf.d/mysqld.cnf
-
+if [ ! -d "$HOST_MYSQL_DATABASE_PATH/mysql" ]; then
+    echo "No persisted MySQL system tables found. Initializing a new database..."
     rm -rf /var/lib/mysql/*
-
-    if [ -z "$(ls -A $HOST_MYSQL_DATABASE_PATH)" ]; then
-        echo "Datadir is empty"
-    else
-        echo "Existing MySQL data detected."
-        Prexisting_DB_Data=true
-    fi
-
-    echo "Reinitializing MySQL system tables..."
     mysqld --initialize-insecure --user=mysql --datadir="$HOST_MYSQL_DATABASE_PATH"
     sleep 5
 
@@ -429,7 +329,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO 'aqua2_cloud_logic'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-    if [ "$Prexisting_DB_Data" = false ]; then
     mysql --user=root --password="$ROOT_PASS" << EOF
 -- Create and initialize the database
 CREATE DATABASE AQuA2_Cloud_Database;
@@ -552,7 +451,6 @@ EOF
         echo "Guest accounts created. Credentials saved to /opt/a2ud/guest_accounts.txt"
     fi
 
-    fi
     # Restart MySQL to apply changes
     echo "Restarting MySQL service to apply configuration changes..."
     service mysql restart
@@ -562,10 +460,8 @@ EOF
     echo "IMPORTANT: vsftpd user password is '$VSFTPD_MYSQL_PASS'"
     echo "IMPORTANT: aqua2_cloud_logic user password is ''"
     
-    # Create flag file to indicate MySQL was set up
-    touch "$MYSQL_SETUP_FLAG"
 else
-    echo "MySQL server is already configured."
+    echo "Persisted MySQL system tables found. Starting the existing database without initialization."
     
     # Make sure MySQL is running
     if ! service mysql status &> /dev/null; then
@@ -593,10 +489,6 @@ if [ ! -f "$VSFTPD_SETUP_FLAG" ]; then
     useradd --home /home/vsftpd --gid a2cloud -m --shell /bin/false vsftpd || {
         echo "User vsftpd may already exist, continuing..."
     }
-    
-    # Install vsftpd and pam-mysql
-    echo "Installing vsftpd and libpam-mysql..."
-    apt-get install -y vsftpd libpam-mysql
     
     # Ensure user data path exists
     echo "Setting up user data directory structure..."
@@ -743,9 +635,18 @@ rsa_cert_file=$CERT_CRT_FILE
 rsa_private_key_file=$CERT_KEY_FILE
 EOF
     
-    echo "IMPORTANT: The vsftpd user password is stored in $MYSQL_VSFTPD_CREDS_FILE"
-    source "$MYSQL_VSFTPD_CREDS_FILE"
-    echo "IMPORTANT: vsftpd user password is '$VSFTPD_MYSQL_PASS'"
+    if [ -f "$MYSQL_VSFTPD_CREDS_FILE" ]; then
+        source "$MYSQL_VSFTPD_CREDS_FILE"
+    else
+        echo "No temporary vsftpd credential file found; rotating the internal vsftpd database credential."
+        VSFTPD_MYSQL_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
+        mysql --user=root --password="$ROOT_PASS" << EOF
+ALTER USER 'vsftpd'@'localhost' IDENTIFIED BY '$VSFTPD_MYSQL_PASS';
+FLUSH PRIVILEGES;
+EOF
+    fi
+
+    echo "Configuring vsftpd database authentication."
 
     # Configure PAM for MySQL authentication
     echo "Configuring PAM for MySQL authentication..."
@@ -810,10 +711,6 @@ APACHE_SETUP_FLAG="/var/.apache_configured"
 if [ ! -f "$APACHE_SETUP_FLAG" ]; then
     echo "Setting up Apache server..."
     
-    # Install Apache
-    echo "Installing Apache..."
-    apt-get install -y apache2 libapache2-mod-php php-mysqli php-mbstring
-
     usermod -g a2cloud www-data #Set www-data user group
     usermod -G a2cloud www-data #Set www-data user group
 
@@ -1019,16 +916,27 @@ EOF
     cat > /usr/local/bin/verify_user.sh << 'EOF'
 #!/bin/bash
 #
-# Usage: verify_user.sh <root_mysql_password> <username>
+# Usage: verify_user.sh <username>
 #
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: $0 <root_mysql_password> <username>"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <username>"
   exit 1
 fi
 
-ROOT_PASS="$1"
-USERNAME="$2"
+ROOT_PASS_FILE="/run/secrets/aqua2_root_password"
+if [ ! -r "$ROOT_PASS_FILE" ]; then
+    echo "ERROR: Root password secret is missing or unreadable."
+    exit 1
+fi
+
+ROOT_PASS=$(tr -d '\r\n' < "$ROOT_PASS_FILE")
+USERNAME="$1"
+
+if [ -z "$ROOT_PASS" ]; then
+    echo "ERROR: Root password secret is empty."
+    exit 1
+fi
 
 if ! mysql -u root -p"$ROOT_PASS" -e "SELECT 1;" &>/dev/null; then
   echo "ERROR: MySQL root login failed. Check your root password."
@@ -1051,20 +959,31 @@ EOF
 
 #!/bin/bash
 #
-# Usage: remove_user.sh <root_mysql_password> <username>
+# Usage: remove_user.sh <username>
 #
 
 set -euo pipefail
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: <root_mysql_password> <username>"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <username>"
   exit 1
 fi
 
-ROOT_PASS="$1"
-USERNAME="$2"
+ROOT_PASS_FILE="/run/secrets/aqua2_root_password"
+if [ ! -r "$ROOT_PASS_FILE" ]; then
+    echo "ERROR: Root password secret is missing or unreadable."
+    exit 1
+fi
+
+ROOT_PASS=$(tr -d '\r\n' < "$ROOT_PASS_FILE")
+USERNAME="$1"
 DB="AQuA2_Cloud_Database"
 USERDIR="/opt/a2ud/user_data/$USERNAME"
+
+if [ -z "$ROOT_PASS" ]; then
+    echo "ERROR: Root password secret is empty."
+    exit 1
+fi
 
 if ! mysql -u root -p"$ROOT_PASS" -e "SELECT 1;" &>/dev/null; then
   echo "ERROR: MySQL root login failed. Check your root password."
@@ -1097,20 +1016,31 @@ EOF
     cat > /usr/local/bin/change_user_password.sh << 'EOF'
 #!/bin/bash
 #
-# Usage: change_user_password.sh <root_password> <username> <new_password>
+# Usage: change_user_password.sh <username> <new_password>
 #
 
 set -euo pipefail
 
-if [ "$#" -ne 3 ]; then
-  echo "Usage: $0 <root_password> <username> <new_password>"
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <username> <new_password>"
   exit 1
 fi
 
-ROOT_PASS="$1"
-USERNAME="$2"
-NEW_PASS="$3"
+ROOT_PASS_FILE="/run/secrets/aqua2_root_password"
+if [ ! -r "$ROOT_PASS_FILE" ]; then
+    echo "ERROR: Root password secret is missing or unreadable."
+    exit 1
+fi
+
+ROOT_PASS=$(tr -d '\r\n' < "$ROOT_PASS_FILE")
+USERNAME="$1"
+NEW_PASS="$2"
 DB="AQuA2_Cloud_Database"
+
+if [ -z "$ROOT_PASS" ]; then
+    echo "ERROR: Root password secret is empty."
+    exit 1
+fi
 
 HASH=$(php -r "echo password_hash('$NEW_PASS', PASSWORD_DEFAULT);")
 
@@ -1150,8 +1080,6 @@ echo "========================="
 echo ""
 echo "MATLAB executor system setup"
 echo "========================="
-
-apt-get install -y xvfb x11vnc fluxbox libnss3 libxcomposite1 libxcursor1 libxdamage1 libxi6 libxtst6 libatk1.0-0t64 libgtk-3-0t64 libasound2t64 libgl1 libglu1-mesa libgles2 libegl1 fonts-liberation fonts-dejavu-core libgtk2.0-0
 
 echo "Configuring Xvfb and VNC..."
 Xvfb :99 -screen 0 1280x1024x24 > /dev/null 2>&1 < /dev/null &
@@ -1278,12 +1206,6 @@ if [ ! -f "$MATLAB_EXECUTOR_SETUP_FLAG" ]; then
     mv -v "$MATLAB_DIR/bin/glnxa64"/libgcc_s.so* "$MATLAB_DIR/bin/glnxa64"/exclude/ 2>/dev/null || true
     mv -v "$MATLAB_DIR/bin/glnxa64"/libg2c.so* "$MATLAB_DIR/bin/glnxa64"/exclude/ 2>/dev/null || true
     echo "MATLAB libraries cleaned."
-    echo "Installing GCC 10 and G++ 10..."
-    apt install -y gcc-10 g++-10 build-essential cmake libglib2.0-dev libgtk-3-dev libx11-dev libxtst-dev libmysqlclient-dev
-
-    echo "Setting GCC/G++ default to version 10..."
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10
-
     JAR_PATH="/tmp/aqua2_cloud_logic/jar/matlab-websocket-1.6.jar"
     JAVACLASSPATH_FILE="$MATLAB_DIR/javaclasspath.txt"
     echo "Setting up MATLAB Java classpath..."
@@ -1442,7 +1364,6 @@ MAINTENANCE_SETUP_FLAG="/var/.maintenance_configured"
 if [ ! -f "$MAINTENANCE_SETUP_FLAG" ]; then
     # Setup maintenance script and scheduler
     echo "Setting up automated maintenance..."
-    apt-get install -y cron
 
     # Copy maintenance script to the right location
     cat > /usr/local/bin/aqua_maintenance.sh << 'EOF'
@@ -1451,19 +1372,18 @@ MAX_AGE_DAYS=2
 
 echo "$(date): Starting scheduled maintenance check" >> "$LOG_FILE"
 
-# Get root MySQL password
-if [ -f "/var/.container_root_hash" ]; then
-    ROOT_PASS=$(grep -o "ROOT_PASS=.*" /containerSetupSettings.txt 2>/dev/null | cut -d= -f2)
-    if [ -z "$ROOT_PASS" ]; then
-        echo "$(date): ERROR - Unable to retrieve MySQL root password" >> "$LOG_FILE"
-        exit 1
-    fi
-else
-    echo "$(date): ERROR - Root password hash file not found" >> "$LOG_FILE"
+# Get root MySQL password from the runtime secret mount
+ROOT_PASS_FILE="/run/secrets/aqua2_root_password"
+if [ ! -r "$ROOT_PASS_FILE" ]; then
+    echo "$(date): ERROR - Root password secret is missing or unreadable" >> "$LOG_FILE"
     exit 1
 fi
 
-ROOT_PASS=$(grep -o "ROOT_PASS=.*" /containerSetupSettings.txt | cut -d= -f2 | tr -d '[:space:]')
+ROOT_PASS=$(tr -d '\r\n' < "$ROOT_PASS_FILE")
+if [ -z "$ROOT_PASS" ]; then
+    echo "$(date): ERROR - Root password secret is empty" >> "$LOG_FILE"
+    exit 1
+fi
 # Query current instances
 CURRENT_INSTANCES=$(mysql --user=root --password="$ROOT_PASS" -N -e "SELECT socket, TIMESTAMPDIFF(HOUR, launched, NOW()) as age_hours FROM AQuA2_Cloud_Database.aqua_instances;" 2>/dev/null)
 

@@ -1,7 +1,24 @@
 <?php
 	//Mark Bright - bmark21@vt.edu
 	session_start();
-    switch ($_POST['UActionSimpleFunction'])
+	require $_SERVER['DOCUMENT_ROOT'] . '/assets/includes/auth_functions.php';
+	require $_SERVER['DOCUMENT_ROOT'] . '/assets/includes/security_functions.php';
+
+	if (!isset($_SESSION['auth']) || $_SESSION['auth'] !== 'verified')
+	{
+		http_response_code(403);
+		echo json_encode(array(false, "Authentication required"));
+		exit();
+	}
+
+	if (!verify_csrf_token())
+	{
+		http_response_code(403);
+		echo json_encode(array(false, "Invalid request token"));
+		exit();
+	}
+
+    switch ($_POST['UActionSimpleFunction'] ?? '')
     {
         case "InstanceInfo":
             InstanceInfo();
