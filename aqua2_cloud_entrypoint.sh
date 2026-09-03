@@ -1483,7 +1483,7 @@ echo "Ensuring GUI environment is active..."
 export DISPLAY=:99
 pgrep Xvfb > /dev/null || Xvfb :99 -screen 0 1280x1024x24 &
 pgrep fluxbox > /dev/null || fluxbox &
-pgrep x11vnc > /dev/null || x11vnc -display :99 -rfbport 5900 -forever -shared -nopw -listen 0.0.0.0 &
+pgrep x11vnc > /dev/null || x11vnc -display :99 -rfbport 5900 -forever -shared -rfbauth ~/.vnc/passwd -listen 0.0.0.0 &
 
 echo "== AQuA2-Cloud ready to use =="
 # Keep the container running indefinitely
@@ -1502,7 +1502,7 @@ while true; do
 
     if ! pgrep x11vnc > /dev/null; then
         echo "$(date): x11vnc not running, restarting..."
-        x11vnc -display :99 -rfbport 5900 -forever -shared -nopw -listen 0.0.0.0 > /dev/null 2>&1 &
+        x11vnc -display :99 -rfbport 5900 -forever -shared -rfbauth ~/.vnc/passwd -listen 0.0.0.0 > /dev/null 2>&1 &
     fi
 
     # Check for container restart flag

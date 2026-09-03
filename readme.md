@@ -71,9 +71,9 @@ Setup requires usage of a VNC client. We recommend TigerVNC ([tigervnc.org](http
 
 >5. Configure your instance prior to deployment by editing *containerSetupSettings.txt*
 >
->      You should set a root password for your container. **Save this password in a safe place. You will need it for performing service management functions in the future as needed.**
+>      You must set a root password for your container. **Save this password in a safe place. While the management functions don't ask for it (since we use a secret file), you will need the password itself to connect with the VNC client in step 8 and any time you connect in the future.**
 >
->      **Do not place your root password in *containerSetupSettings.txt*.** That file is copied into the image. Instead, we create a local secret file that is excluded from Docker builds. Run the commands for your host operating system from the project directory, then enter a strong password when prompted:
+>      **Do not place the password in *containerSetupSettings.txt*.** That file is copied into the image. Instead, we create a local secret file that is excluded from Docker builds. Run the commands for your host operating system from the project directory, then enter a strong password when prompted:
 >
 >      **Do not use a double quote (") or a backslash (\\) in the password.** Both are escape characters in MySQL configuration files and will prevent the service from authenticating to its own database. Every other printable character, including #, spaces, and symbols, is fine.
 >
@@ -100,9 +100,9 @@ Setup requires usage of a VNC client. We recommend TigerVNC ([tigervnc.org](http
 >      [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr); $plain = $null
 >      ```
 >
->      Keep this file private. For an existing deployment, its value must be the current root/MySQL root password. The docker run command in step 7 mounts this file into the container.
+>      Keep the secrets file private. You will need the password itself to connect with the VNC client in step 8 and any time you connect in the future. **If you are redeploying against an existing docker volume, the secret must contain that deployment's original root password.**
 >      
->      You can also customize your server here, including changing ports, the information used in a generated SSL certificate (you can also add your own certificate to the docker volume later), and setting the contact information that is displayed in the website. 
+>      You can now customize your server via *containerSetupSettings.txt*, including changing ports, the information used in a generated SSL certificate (you can also add your own certificate to the docker volume later), and setting the contact information that is displayed in the website. 
 >
 >      Replace **127.0.0.1** value for parameter **CLOUD_SERVER_IP_DOMAIN** with the expected IP/Hostname of your server. For example, our publicly available deployed instance has (CLOUD_SERVER_IP_DOMAIN=yulab.vt.domains), a hostname.
 >
@@ -331,7 +331,7 @@ pgrep -x Xvfb >/dev/null && pgrep -x fluxbox >/dev/null && pgrep -x x11vnc >/dev
 
 If for some reason it is not, the below command should start it.
 ```
-export DISPLAY=:99; pgrep -x Xvfb >/dev/null || Xvfb :99 -screen 0 1280x1024x24 & pgrep -x fluxbox >/dev/null || fluxbox & pgrep -x x11vnc >/dev/null || x11vnc -display :99 -rfbport 5900 -forever -shared -nopw -listen 0.0.0.0 &
+export DISPLAY=:99; pgrep -x Xvfb >/dev/null || Xvfb :99 -screen 0 1280x1024x24 & pgrep -x fluxbox >/dev/null || fluxbox & pgrep -x x11vnc >/dev/null || x11vnc -display :99 -rfbport 5900 -forever -shared -rfbauth ~/.vnc/passwd -listen 0.0.0.0 &
 ```
 
 If this fixes any issues regarding AQuA2-Cloud instances hanging at "Initializing backend logic", please submit a bug report containing the circumstances of your deployment and usage.
